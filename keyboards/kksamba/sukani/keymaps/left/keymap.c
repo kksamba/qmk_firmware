@@ -122,3 +122,8 @@ bool get_retro_tapping(uint16_t keycode, keyrecord_t *record) {
 }
 
 #endif    // RETRO_TAPPING_PER_KEY
+
+
+
+
+
