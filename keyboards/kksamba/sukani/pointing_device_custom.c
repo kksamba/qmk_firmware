@@ -3,6 +3,9 @@
 
 // custom analog joystick device driver
 
+#ifdef POINTING_DEVICE_ENABLE
+
+
 #include "pointing_device.h"
 #include "wait.h"
 #include "timer.h"
@@ -20,7 +23,13 @@ uint16_t maxAxisValue = ANALOG_JOYSTICK_AXIS_MAX;
 uint8_t maxCursorSpeed = ANALOG_JOYSTICK_SPEED_MAX;
 uint8_t speedRegulator = ANALOG_JOYSTICK_SPEED_REGULATOR; // Lower Values Create Faster Movement
 
+#ifdef ANALOG_JOYSTICK_CUSTOM_DEADZONE
+int16_t xOrigin = (ANALOG_JOYSTICK_AXIS_MIN + ANALOG_JOYSTICK_AXIS_MAX) / 2;
+int16_t yOrigin = (ANALOG_JOYSTICK_AXIS_MIN + ANALOG_JOYSTICK_AXIS_MAX) / 2;
+int16_t deadZone = ANALOG_JOYSTICK_CUSTOM_DEADZONE;
+#else
 int16_t xOrigin, yOrigin;
+#endif
 
 uint16_t lastCursor = 0;
 
@@ -40,7 +49,13 @@ int16_t axisCoordinate(pin_t pin, uint16_t origin) {
 
     int16_t position = analogReadPin(pin);
 
-    if (origin == position) {
+#ifdef ANALOG_JOYSTICK_CUSTOM_DEADZONE
+    bool isNeutoral = ( (origin - position) * (origin - position) < deadZone * deadZone );
+#else
+    bool isNeutoral = ( origin == position );
+#endif
+
+    if (isNeutoral) {
         return 0;
     } else if (origin > position) {
         distanceFromOrigin = origin - position;
@@ -182,8 +197,10 @@ void pointing_device_driver_init(void) {
     setPinInputHigh(ANALOG_JOYSTICK_CLICK_PIN);
 #endif
     // Account for drift
+#ifndef ANALOG_JOYSTICK_CUSTOM_DEADZONE
     xOrigin = analogReadPin(ANALOG_JOYSTICK_X_AXIS_PIN);
     yOrigin = analogReadPin(ANALOG_JOYSTICK_Y_AXIS_PIN);
+#endif
 
 #ifdef ANALOG_JOYSTICK_CUSTOM_INTERP_SPLINE_CUBIC
     spline_cubic_init();
@@ -208,3 +225,6 @@ report_mouse_t pointing_device_driver_get_report(report_mouse_t mouse_report) {
 // this driver don't use following functions
 uint16_t pointing_device_driver_get_cpi(void) { return 0; }
 void pointing_device_driver_set_cpi(uint16_t cpi) {}
+
+
+#endif // #ifdef POINTING_DEVICE_ENABLE
